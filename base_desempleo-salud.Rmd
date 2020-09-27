@@ -1,0 +1,140 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+1. DESEMPLEO
+
+EXTRACICÓN DE BASE DE DATOS :
+```{r}
+library(htmltab) #para scraping
+library(jsonlite) #para extraer datos del API
+library(stringr) #para limpieza de columnas (extracción de numeros, particiones)
+library(readr)   #para extraer un único numero de la columna
+
+
+link_desempleo = "https://tradingeconomics.com/country-list/unemployment-rate"
+linkPath_desempleo='//*[@id="ctl00_ContentPlaceHolder1_ctl01_UpdatePanel1"]/div/div[2]/table'
+
+
+desempleo = htmltab(doc = link_desempleo, 
+                which =linkPath_desempleo)
+str(desempleo)
+```
+ELIMINANDO COLUMNAS INNECESARIAS:
+```{r}
+desempleo = desempleo[,c(1,3)]
+names(desempleo) = c("Country", "desempleo")
+```
+
+
+
+2. INVERSIÓN EN SALUD:
+
+EXTRACICÓN DE BASE DE DATOS:
+```{r}
+library(readr)
+salud <- read_csv("salud.csv")
+View(salud)
+str(salud)
+```
+CAMBIANDO EL NOMBRE DE LAS VARIABLES:
+```{r}
+names(salud)[names(salud)=='X1']='Country'
+str(salud$Country)
+names(salud)[names(salud)=='Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)']='CHE_GDP'
+```
+ELIMINANDO COLUMNAS INNECESARIAS:
+```{r}
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_1`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_2`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_3`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_4`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_5`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_6`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_10`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_7`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_8`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_9`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_11`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_12`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_13`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_14`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_15`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_16`  =NULL
+salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_17`  =NULL
+```
+ELIMINANDO ROW INNECESARIA:
+```{r}
+salud=salud[-1, ]
+```
+CAMBIO DE NOMBRES DE PAÍSES:
+```{r}
+salud$Country=gsub("(Plurinational State of)","",salud$Country)
+salud$Country=gsub('(Islamic Republic of)',"",salud$Country)
+salud$Country=gsub("(Federated States of)","",salud$Country)
+salud$Country=gsub("(Bolivarian Republic of)","",salud$Country)
+salud$Country=gsub("\\(|\\)","",salud$Country)
+salud$Country=gsub("Bolivia ","Bolivia",salud$Country)
+salud$Country=gsub('Iran ',"Iran",salud$Country)
+salud$Country=gsub('Czechia',"Czech Republic",salud$Country)
+desempleo$Country=gsub('Guinea Bissau',"Guinea-Bissau",desempleo$Country)
+
+
+salud$Country=gsub("Brunei Darussalam","Brunei",salud$Country)
+salud$Country=gsub("Cabo Verde","Cape Verde",salud$Country)
+salud$Country=gsub("Côte d'Ivoire","Ivory Coast",salud$Country)
+salud$Country=gsub("Lao People's Democratic Republic","Laos",salud$Country)
+salud$Country=gsub("Republic of Korea","South Korea",salud$Country)
+salud$Country=gsub("Republic of Moldova","Moldova",salud$Country)
+salud$Country=gsub("Republic of North Macedonia","Macedonia",salud$Country)
+salud$Country=gsub("Russian Federation","Russia",salud$Country)
+salud$Country=gsub("Syrian Arab Republic","Syria",salud$Country)
+salud$Country=gsub("Timor-Leste","East Timor",salud$Country)
+salud$Country=gsub("United Kingdom of Great Britain and Northern Ireland","United Kingdom",salud$Country)
+salud$Country=gsub("United Republic of Tanzania","Tanzania",salud$Country)
+salud$Country=gsub("Viet Nam","Vietnam",salud$Country)
+```
+
+
+
+3. MERGE:
+
+```{r}
+names(desempleo)
+names(salud)
+#entonces le pedimos que nos fusione las datas en base a la variable común: país
+baseds=merge(salud,desempleo,by.x='Country', by.y='Country') 
+head(baseds)
+```
+VERSIÓN SIN ELIMINAR OBSERVACIONES:
+```{r}
+base_ds=merge(salud,desempleo,all.x=T,all.y=T) #nos aseguramos de incluir todos nuestros casos
+#esto signfica que estamos pidiendo que "todos los valores de X sean incluidos" y también "todos los valores de y". Presupone que la primera columna será la columna guía
+head(base_ds)
+```
+VERIFICANDO VALORES DUPLICADOS:
+```{r}
+base_ds[duplicated(base_ds$Country),]
+```
+FILAS INCOMPLETAS
+```{r}
+base_ds[!complete.cases(base_ds),] #para verificar si hay casos en una base de datos que no hay en la otra
+```
+BUSCANDO CASOS QUE NO DEBEN ESTAR INCLUIDOS:
+```{r}
+?grep
+base_ds[grep("World|Euro",base_ds$Country),]
+```
+ELIMINANDO ROWS INNECESARIAS:
+```{r}
+base_ds=base_ds[-grep("World|Euro",base_ds$Country),]
+```
+
+CAMBIANDO VARIABLES A NUMÉRICAS:
+```{r}
+desempleo$desempleo=as.numeric(desempleo$desempleo)
+salud$CHE_GDP=as.numeric(salud$CHE_GDP)
+```
+
