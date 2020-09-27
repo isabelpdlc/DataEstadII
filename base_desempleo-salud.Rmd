@@ -22,10 +22,11 @@ desempleo = htmltab(doc = link_desempleo,
                 which =linkPath_desempleo)
 str(desempleo)
 ```
-ELIMINANDO COLUMNAS INNECESARIAS:
+ELIMINANDO COLUMNAS INNECESARIAS Y CAMBIO DE NOMBRE DE PAÍSES:
 ```{r}
 desempleo = desempleo[,c(1,3)]
 names(desempleo) = c("Country", "desempleo")
+desempleo$Country=gsub('Guinea Bissau',"Guinea-Bissau",desempleo$Country)
 ```
 
 
@@ -79,7 +80,6 @@ salud$Country=gsub("\\(|\\)","",salud$Country)
 salud$Country=gsub("Bolivia ","Bolivia",salud$Country)
 salud$Country=gsub('Iran ',"Iran",salud$Country)
 salud$Country=gsub('Czechia',"Czech Republic",salud$Country)
-desempleo$Country=gsub('Guinea Bissau',"Guinea-Bissau",desempleo$Country)
 
 
 salud$Country=gsub("Brunei Darussalam","Brunei",salud$Country)
@@ -97,8 +97,26 @@ salud$Country=gsub("United Republic of Tanzania","Tanzania",salud$Country)
 salud$Country=gsub("Viet Nam","Vietnam",salud$Country)
 ```
 
+CAMBIANDO VARIABLES A NUMÉRICAS:
+```{r}
+desempleo$desempleo=as.numeric(desempleo$desempleo)
+salud$CHE_GDP=as.numeric(salud$CHE_GDP)
+```
+
+BUSCANDO CASOS QUE NO DEBEN ESTAR INCLUIDOS:
+```{r}
+?grep
+desempleo[grep("World|Euro",desempleo$Country),]
+```
+
+ELIMINANDO ROWS INNECESARIAS:
+```{r}
+desempleo=desempleo[-grep("World|Euro",desempleo$Country),]
+```
 
 
+
+###EXTRA###
 3. MERGE:
 
 ```{r}
@@ -122,19 +140,3 @@ FILAS INCOMPLETAS
 ```{r}
 base_ds[!complete.cases(base_ds),] #para verificar si hay casos en una base de datos que no hay en la otra
 ```
-BUSCANDO CASOS QUE NO DEBEN ESTAR INCLUIDOS:
-```{r}
-?grep
-base_ds[grep("World|Euro",base_ds$Country),]
-```
-ELIMINANDO ROWS INNECESARIAS:
-```{r}
-base_ds=base_ds[-grep("World|Euro",base_ds$Country),]
-```
-
-CAMBIANDO VARIABLES A NUMÉRICAS:
-```{r}
-desempleo$desempleo=as.numeric(desempleo$desempleo)
-salud$CHE_GDP=as.numeric(salud$CHE_GDP)
-```
-
