@@ -14,6 +14,16 @@ library(stringr) #para limpieza de columnas (extracción de numeros, particiones
 library(readr)   #para extraer un único numero de la columna
 
 
+library(rio)
+library(cluster)
+library(plyr) # para funcion "each"
+library(psych) #para hacer tablas comparadas
+library(knitr) #para generar tablas html
+library(kableExtra) #para generar tablas html
+library(factoextra) #visualización de clusters
+library(ggrepel) #para que las etiquetas de los graficos no se superpongan
+library(dplyr)
+
 link_desempleo = "https://tradingeconomics.com/country-list/unemployment-rate"
 linkPath_desempleo='//*[@id="ctl00_ContentPlaceHolder1_ctl01_UpdatePanel1"]/div/div[2]/table'
 
@@ -22,11 +32,10 @@ desempleo = htmltab(doc = link_desempleo,
                 which =linkPath_desempleo)
 str(desempleo)
 ```
-ELIMINANDO COLUMNAS INNECESARIAS Y CAMBIO DE NOMBRE DE PAÍSES:
+ELIMINANDO COLUMNAS INNECESARIAS:
 ```{r}
 desempleo = desempleo[,c(1,3)]
 names(desempleo) = c("Country", "desempleo")
-desempleo$Country=gsub('Guinea Bissau',"Guinea-Bissau",desempleo$Country)
 ```
 
 
@@ -35,36 +44,22 @@ desempleo$Country=gsub('Guinea Bissau',"Guinea-Bissau",desempleo$Country)
 
 EXTRACICÓN DE BASE DE DATOS:
 ```{r}
-library(readr)
-salud <- read_csv("salud.csv")
-View(salud)
+
+salud <- import("https://github.com/isabelpdlc/DataEstadII/raw/master/salud_datasucia.csv")
 str(salud)
+summary(salud)
+
 ```
 CAMBIANDO EL NOMBRE DE LAS VARIABLES:
 ```{r}
-names(salud)[names(salud)=='X1']='Country'
+names(salud)[names(salud)=='V1']='Country'
 str(salud$Country)
 names(salud)[names(salud)=='Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)']='CHE_GDP'
 ```
 ELIMINANDO COLUMNAS INNECESARIAS:
 ```{r}
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_1`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_2`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_3`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_4`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_5`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_6`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_10`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_7`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_8`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_9`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_11`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_12`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_13`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_14`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_15`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_16`  =NULL
-salud$`Current health expenditure (CHE) as percentage of gross domestic product (GDP) (%)_17`  =NULL
+salud=salud[,-c(3:19)]
+
 ```
 ELIMINANDO ROW INNECESARIA:
 ```{r}
@@ -80,6 +75,7 @@ salud$Country=gsub("\\(|\\)","",salud$Country)
 salud$Country=gsub("Bolivia ","Bolivia",salud$Country)
 salud$Country=gsub('Iran ',"Iran",salud$Country)
 salud$Country=gsub('Czechia',"Czech Republic",salud$Country)
+desempleo$Country=gsub('Guinea Bissau',"Guinea-Bissau",desempleo$Country)
 
 
 salud$Country=gsub("Brunei Darussalam","Brunei",salud$Country)
@@ -97,26 +93,8 @@ salud$Country=gsub("United Republic of Tanzania","Tanzania",salud$Country)
 salud$Country=gsub("Viet Nam","Vietnam",salud$Country)
 ```
 
-CAMBIANDO VARIABLES A NUMÉRICAS:
-```{r}
-desempleo$desempleo=as.numeric(desempleo$desempleo)
-salud$CHE_GDP=as.numeric(salud$CHE_GDP)
-```
-
-BUSCANDO CASOS QUE NO DEBEN ESTAR INCLUIDOS:
-```{r}
-?grep
-desempleo[grep("World|Euro",desempleo$Country),]
-```
-
-ELIMINANDO ROWS INNECESARIAS:
-```{r}
-desempleo=desempleo[-grep("World|Euro",desempleo$Country),]
-```
 
 
-
-###EXTRA###
 3. MERGE:
 
 ```{r}
@@ -140,3 +118,24 @@ FILAS INCOMPLETAS
 ```{r}
 base_ds[!complete.cases(base_ds),] #para verificar si hay casos en una base de datos que no hay en la otra
 ```
+BUSCANDO CASOS QUE NO DEBEN ESTAR INCLUIDOS:
+```{r}
+?grep
+base_ds[grep("World|Euro",base_ds$Country),]
+```
+ELIMINANDO ROWS INNECESARIAS:
+```{r}
+base_ds=base_ds[-grep("World|Euro",base_ds$Country),]
+```
+
+CAMBIANDO VARIABLES A NUMÉRICAS:
+```{r}
+desempleo$desempleo=as.numeric(desempleo$desempleo)
+salud$CHE_GDP=as.numeric(salud$CHE_GDP)
+```
+
+PASAR DATA A GITHUB:
+```{r}
+write.csv(base_ds,"base_desempleo-salud.csv", row.names = F)
+```
+
